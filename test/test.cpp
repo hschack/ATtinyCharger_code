@@ -8,6 +8,7 @@ const uint8_t liefpoBatPin     = PIN_A2;
 const uint8_t currentPin       = PIN_A3; // ACS758
 const uint8_t pwmPin           = PIN_A6;
 const uint8_t ignPin           = PIN_A7;
+
 // ------------------- ADC / sensor constants -------------------
 constexpr float Vref           = 5.0;
 constexpr float scaleDirect    = Vref / 4095.0;
@@ -46,8 +47,16 @@ static float filtLiFePO4       = 0.0;
 // EEPROM address to store flag
 constexpr uint8_t EEPROM_ADDR_FLAG = 0;
 
+// ------------------- PWM settings -------------------
+#define PWM_TARGET_PIN   PIN_PA6       // A6
+#define PWM_8BIT_TOP     255           // 8-bit resolution
+
+// Vælg frekvens: 0 = ~1.22 kHz, 1 = ~4.88 kHz, 2 = ~19.5 kHz
+#define PWM_FREQ_SETTING 1
+
 // ------------------- Function prototypes -------------------
 void setup();
+void loop();
 void sampleAdc();
 float filteredUpdate(float oldVal, float newVal);
 int controlPWM(float measuredAmp, bool doCharge);
@@ -55,6 +64,10 @@ void printStatus(float measuredAmp, float carVolt, float lifepoVolt, int pwmOut,
 bool batterySafetyCheck(float carVolt, float lifepoVolt, float measuredAmp);
 bool readEepromFlag();
 void writeEepromFlag(bool flag);
+
+// PWM functions
+void pwm_init_A6(uint8_t duty);
+void pwm_set_duty(uint8_t duty);
 
 // ------------------- Main loop ------------------------
 void loop() {
@@ -118,20 +131,15 @@ int controlPWM(float measuredAmp, bool doCharge) {
         }
         
         pwmOut = pwmOutUpdated + step;
-        if (pwmOut > PWM_MAX) {
-            pwmOut = PWM_MAX;
-        }
-        if (pwmOut < PWM_MIN) {
-            pwmOut = PWM_MIN;
-        }
+        if (pwmOut > PWM_MAX) pwmOut = PWM_MAX;
+        if (pwmOut < PWM_MIN) pwmOut = PWM_MIN;
     }
     else {
         pwmOut = 0;
     }
 
     if(pwmOutUpdated != pwmOut) {
-        // Change pwm output, if pwmOut has changed
-        analogWrite(pwmPin, pwmOut);
+        pwm_set_duty(pwmOut);
         pwmOutUpdated = pwmOut;
     }
     return pwmOut;
@@ -201,9 +209,8 @@ void printStatus(float measuredAmp, float carVolt, float lifepoVolt, int pwmOut,
 
 // ------------------- Setup ----------------------------
 void setup() {
- //   pinMode(ledPin, OUTPUT);
     pinMode(pwmPin, OUTPUT);
-    analogWrite(pwmPin, PWM_MIN);
+    pwm_init_A6(PWM_MIN);   // hardware PWM på A6
     Serial.begin(115200);
     analogReadResolution(12);
 }
@@ -216,4 +223,36 @@ bool readEepromFlag() {
 
 void writeEepromFlag(bool flag) {
     EEPROM.update(EEPROM_ADDR_FLAG, flag ? 0xFF : 0x00);
+}
+
+// ------------------- PWM functions -------------------
+void pwm_init_A6(uint8_t duty) {
+    pinMode(PWM_TARGET_PIN, OUTPUT);
+
+    // Stop timer mens vi konfigurerer
+    TCA0.SINGLE.CTRLA = 0;
+
+    // Single slope PWM, enable WO2 (A6)
+    TCA0.SINGLE.CTRLB = TCA_SINGLE_WGMODE_FRQ_gc | TCA_SINGLE_CMP2EN_bm;
+
+    // 8-bit resolution
+    TCA0.SINGLE.PER = PWM_8BIT_TOP;
+
+    // Duty
+    TCA0.SINGLE.CMP2 = duty;
+
+    // Vælg prescaler baseret på frekvensvalg
+    uint8_t prescaler;
+    switch(PWM_FREQ_SETTING) {
+        case 0: prescaler = TCA_SINGLE_CLKSEL_DIV64_gc; break;   // ~1.22 kHz
+        case 1: prescaler = TCA_SINGLE_CLKSEL_DIV16_gc; break;   // ~4.88 kHz
+        case 2: prescaler = TCA_SINGLE_CLKSEL_DIV4_gc; break;    // ~19.5 kHz
+        default: prescaler = TCA_SINGLE_CLKSEL_DIV16_gc; break;  // fallback
+    }
+
+    TCA0.SINGLE.CTRLA = prescaler | TCA_SINGLE_ENABLE_bm;
+}
+
+void pwm_set_duty(uint8_t duty) {
+    TCA0.SINGLE.CMP2 = duty;   // 0–255 duty
 }
