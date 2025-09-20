@@ -10,15 +10,15 @@ const uint8_t pwmPin           = PIN_A6;
 const uint8_t ignPin           = PIN_A7;
 // ------------------- ADC / sensor constants -------------------
 constexpr float Vref           = 5.0;
-constexpr float scaleDirect    = Vref / 1023.0;
+constexpr float scaleDirect    = Vref / 4095.0;
 
 // Voltage dividers for batteries (carBat & LiFePO4)
 constexpr float R1             = 8200.0;
 constexpr float R2             = 2200.0;
-constexpr float scaleDivider   = (Vref / 1023.0) * ((R1 + R2) / R2);
+constexpr float scaleDivider   = (Vref / 4095.0) * ((R1 + R2) / R2);
 
 // ACS758 parameters
-constexpr float acsOffset      = 509.0; // 0A
+constexpr float acsOffset      = 2048.0; // 0A
 constexpr float acsSens        = 0.12207; // 40 mV per 1A
 
 // ------------------- Safety thresholds -----------------------
@@ -28,7 +28,7 @@ constexpr float LIFEPO_RECOVER = 13.1;  // V, resume charging
 constexpr float ACS_MIN        = -1.0;  // A, stop if current goes negative
 
 // ------------------- PWM control constants -------------------
-constexpr float SETPOINT_A     = 8.0;  // target current
+constexpr float SETPOINT_A     = 7.0;  // target current
 #define PWM_STEP_FAST            20      // 5% PWM step
 #define PWM_STEP_SLOW            2       // 2% PWM step
 constexpr int   PWM_MAX        = 255;
@@ -36,10 +36,10 @@ constexpr int   PWM_MIN        = 0;
 
 // ------------------- Timing -------------------
 #define ADC_INTERVAL             25      // in 25ms => 40 Hz
-#define PRINT_INTERVAL           1000    // in 1000ms => 2 Hz
+#define PRINT_INTERVAL           5000    // in 1000ms => 2 Hz
 #define FILTER_CONSTANT          0.3
 // ------------------- Filtered ADC -------------------
-static float filtCurrent       = 500.0;
+static float filtCurrent       = 2048.0;
 static float filtCarBat        = 0.0;
 static float filtLiFePO4       = 0.0;
 
