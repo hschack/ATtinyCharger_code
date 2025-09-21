@@ -1,6 +1,18 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 
+// FUSES = {
+//     .WDTCFG = 0x0A, // WDTCFG {PERIOD=4KCLK, WINDOW=OFF}
+//     .BODCFG = 0x00, // BODCFG {SLEEP=DIS, ACTIVE=DIS, SAMPFREQ=1KHZ, LVL=BODLEVEL0}
+//     .OSCCFG = 0x7E, // OSCCFG {FREQSEL=20MHZ, OSCLOCK=CLEAR}
+//     .SYSCFG0 = 0xF6, // SYSCFG0 {EESAVE=CLEAR, RSTPINCFG=UPDI, TOUTDIS=SET, CRCSRC=NOCRC}
+//     .SYSCFG1 = 0xFF, // SYSCFG1 {SUT=64MS}
+//     .APPEND = 0x00, // APPEND {APPEND=User range:  0x0 - 0xFF}
+//     .BOOTEND = 0x00, // BOOTEND {BOOTEND=User range:  0x0 - 0xFF}
+// };
+
+// LOCKBITS = 0xC5; // {LB=NOLOCK}
+
 // ------------------- Pin constants -------------------
 //const uint8_t ledPin           = LED_BUILTIN;
 const uint8_t carBatPin        = PIN_A1;
