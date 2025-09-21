@@ -253,6 +253,7 @@ void pwm_init_A6(uint8_t duty) {
     TCA0.SINGLE.CTRLA = prescaler | TCA_SINGLE_ENABLE_bm;
 }
 
+// ------------------------- PWM freq -----------------------------
 void pwm_set_duty(uint8_t duty) {
     TCA0.SINGLE.CMP2 = duty;   // 0–255 duty
 }
