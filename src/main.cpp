@@ -3,7 +3,6 @@
 #include "avr/io.h"
 #include "avr/wdt.h"
 
-
 FUSES = {
   0x0A, // BODCFG {SLEEP=DIS, ACTIVE=DIS, SAMPFREQ=1KHZ, LVL=BODLEVEL0}
   0x00, // WDTCFG {PERIOD=4KCLK, WINDOW=OFF}
@@ -52,7 +51,7 @@ constexpr int   PWM_MIN        = 0;
 
 // ------------------- Timing -------------------
 #define ADC_INTERVAL             25      // in 25ms => 40 Hz
-#define PRINT_INTERVAL           5000    // in 1000ms => 2 Hz
+#define PRINT_INTERVAL           1000    // in 1000ms => 2 Hz
 #define FILTER_CONSTANT          0.3
 // ------------------- Filtered ADC -------------------
 static float filtCurrent       = 2048.0;
@@ -105,6 +104,7 @@ void loop() {
         //digitalWrite(ledPin, !digitalRead(ledPin));
     }
         feed_wdt(); // feed watchdog
+        // delay(3500); // test wdt time out 3500 ms ok med 0A ca 4 sek
 }
 
 // ------------------- Functions ------------------------
@@ -165,8 +165,8 @@ bool batterySafetyCheck(float carVolt, float lifepoVolt, float measuredAmp) {
     if(FirstRun) {
         ChargingPaused = readEepromFlag();
         prevFlag = ChargingPaused;
-        Serial.print("doCharge from eeprom = ");
-        Serial.println(doCharge ? "YES" : "NO");
+        Serial.print("ChargingPaused from eeprom = ");
+        Serial.println(ChargingPaused ? "TRUE" : "FALSE");
         FirstRun = false;
     }
     
