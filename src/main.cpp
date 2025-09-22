@@ -1,17 +1,21 @@
 #include <Arduino.h>
 #include <EEPROM.h>
+#include "avr/io.h"
+#include "avr/wdt.h"
 
-// FUSES = {
-//     .WDTCFG = 0x0A, // WDTCFG {PERIOD=4KCLK, WINDOW=OFF}
-//     .BODCFG = 0x00, // BODCFG {SLEEP=DIS, ACTIVE=DIS, SAMPFREQ=1KHZ, LVL=BODLEVEL0}
-//     .OSCCFG = 0x7E, // OSCCFG {FREQSEL=20MHZ, OSCLOCK=CLEAR}
-//     .SYSCFG0 = 0xF6, // SYSCFG0 {EESAVE=CLEAR, RSTPINCFG=UPDI, TOUTDIS=SET, CRCSRC=NOCRC}
-//     .SYSCFG1 = 0xFF, // SYSCFG1 {SUT=64MS}
-//     .APPEND = 0x00, // APPEND {APPEND=User range:  0x0 - 0xFF}
-//     .BOOTEND = 0x00, // BOOTEND {BOOTEND=User range:  0x0 - 0xFF}
-// };
 
-// LOCKBITS = 0xC5; // {LB=NOLOCK}
+FUSES = {
+  0x0A, // BODCFG {SLEEP=DIS, ACTIVE=DIS, SAMPFREQ=1KHZ, LVL=BODLEVEL0}
+  0x00, // WDTCFG {PERIOD=4KCLK, WINDOW=OFF}
+  0x7E, // OSCCFG {FREQSEL=20MHZ, OSCLOCK=CLEAR}
+  {0, 0},
+  0xF6, // SYSCFG0 {EESAVE=CLEAR, RSTPINCFG=UPDI, TOUTDIS=SET, CRCSRC=NOCRC}
+  0xFF, // SYSCFG1 {SUT=64MS}
+  0x00, // APPEND {APPEND=User range:  0x0 - 0xFF}
+  0x00, // BOOTEND {BOOTEND=User range:  0x0 - 0xFF}
+};
+
+ LOCKBITS = 0xC5; // {LB=NOLOCK}
 
 // ------------------- Pin constants -------------------
 //const uint8_t ledPin           = LED_BUILTIN;
@@ -31,7 +35,7 @@ constexpr float scaleDivider   = (Vref / 4095.0) * ((R1 + R2) / R2);
 
 // ACS758 parameters
 constexpr float acsOffset      = 2048.0; // 0A
-constexpr float acsSens        = 0.12207; // 40 mV per 1A
+constexpr float acsSens        = 0.030518; // 0.12207; // 40 mV per 1A
 
 // ------------------- Safety thresholds -----------------------
 constexpr float BAT_DIFF_MAX   = 0.0;   // V, carBat - LiFePO4
@@ -67,6 +71,7 @@ void printStatus(float measuredAmp, float carVolt, float lifepoVolt, int pwmOut,
 bool batterySafetyCheck(float carVolt, float lifepoVolt, float measuredAmp);
 bool readEepromFlag();
 void writeEepromFlag(bool flag);
+void feed_wdt();
 
 // ------------------- Main loop ------------------------
 void loop() {
@@ -99,6 +104,7 @@ void loop() {
         printStatus(measuredAmp, carVolt, lifepoVolt, Pwm, doCharge);
         //digitalWrite(ledPin, !digitalRead(ledPin));
     }
+        feed_wdt(); // feed watchdog
 }
 
 // ------------------- Functions ------------------------
@@ -218,6 +224,13 @@ void setup() {
     analogWrite(pwmPin, PWM_MIN);
     Serial.begin(115200);
     analogReadResolution(12);
+    // CPU_CCP = CCP_IOREG_gc; // allow changes
+    // WDT.CTRLA = WDT_WINDOW_4KCLK_gc | WDT_PERIOD_4KCLK_gc; // 4s period and window
+    // CPU_CCP = CCP_IOREG_gc;
+    // WDT.STATUS = WDT_LOCK_bm;
+    // while(WDT.STATUS & WDT_SYNCBUSY_bm){
+    // } // wait until WDT is synchronized  
+    Serial.println("Setup done !");
 }
 
 // ------------------- EEPROM helpers -------------------
@@ -228,4 +241,9 @@ bool readEepromFlag() {
 
 void writeEepromFlag(bool flag) {
     EEPROM.update(EEPROM_ADDR_FLAG, flag ? 0xFF : 0x00);
+}
+
+// Feed watchdog
+void feed_wdt(void) {
+  __asm__ __volatile__("wdr");
 }
