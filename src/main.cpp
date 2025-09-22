@@ -3,18 +3,18 @@
 #include "avr/io.h"
 #include "avr/wdt.h"
 
-FUSES = {
-  0x0A, // BODCFG {SLEEP=DIS, ACTIVE=DIS, SAMPFREQ=1KHZ, LVL=BODLEVEL0}
-  0x00, // WDTCFG {PERIOD=4KCLK, WINDOW=OFF}
-  0x7E, // OSCCFG {FREQSEL=20MHZ, OSCLOCK=CLEAR}
-  {0, 0},
-  0xF6, // SYSCFG0 {EESAVE=CLEAR, RSTPINCFG=UPDI, TOUTDIS=SET, CRCSRC=NOCRC}
-  0xFF, // SYSCFG1 {SUT=64MS}
-  0x00, // APPEND {APPEND=User range:  0x0 - 0xFF}
-  0x00, // BOOTEND {BOOTEND=User range:  0x0 - 0xFF}
-};
+// FUSES = {
+//   0x0A, // WDTCFG {PERIOD=4KCLK, WINDOW=OFF}
+//   0x00, // BODCFG {SLEEP=DIS, ACTIVE=DIS, SAMPFREQ=1KHZ, LVL=BODLEVEL0}
+//   0x7E, // OSCCFG {FREQSEL=20MHZ, OSCLOCK=CLEAR}
+//   {0, 0},
+//   0xF6, // SYSCFG0 {EESAVE=CLEAR, RSTPINCFG=UPDI, TOUTDIS=SET, CRCSRC=NOCRC}
+//   0xFF, // SYSCFG1 {SUT=64MS}
+//   0x00, // APPEND {APPEND=User range:  0x0 - 0xFF}
+//   0x00, // BOOTEND {BOOTEND=User range:  0x0 - 0xFF}
+// };
 
- LOCKBITS = 0xC5; // {LB=NOLOCK}
+//  LOCKBITS = 0xC5; // {LB=NOLOCK}
 
 // ------------------- Pin constants -------------------
 //const uint8_t ledPin           = LED_BUILTIN;
