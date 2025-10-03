@@ -51,7 +51,7 @@ constexpr int   PWM_MIN        = 0;
 
 // ------------------- Timing -------------------
 #define ADC_INTERVAL             25      // in 25ms => 40 Hz
-#define PRINT_INTERVAL           1000    // in 1000ms => 2 Hz
+#define PRINT_INTERVAL           1000    // in 1000ms => 1 Hz
 #define FILTER_CONSTANT          0.3
 // ------------------- Filtered ADC -------------------
 static float filtCurrent       = 2048.0;
@@ -165,8 +165,8 @@ bool batterySafetyCheck(float carVolt, float lifepoVolt, float measuredAmp) {
     if(FirstRun) {
         ChargingPaused = readEepromFlag();
         prevFlag = ChargingPaused;
-        Serial.print("ChargingPaused from eeprom = ");
-        Serial.println(ChargingPaused ? "TRUE" : "FALSE");
+        Serial.print("doCharge from eeprom = ");
+        Serial.println(doCharge ? "YES" : "NO");
         FirstRun = false;
     }
     
@@ -178,7 +178,7 @@ bool batterySafetyCheck(float carVolt, float lifepoVolt, float measuredAmp) {
         Serial.println((carVolt-lifepoVolt), 2);
         doCharge = false;  // stop charging
     } else if (lifepoVolt > LIFEPO_MAX) {
-        Serial.print("Full Charge: ) ");
+        Serial.print("Full Charge: > ");
         Serial.println((lifepoVolt), 2);
         doCharge = false;  // stop charging
         ChargingPaused = true;
@@ -186,7 +186,7 @@ bool batterySafetyCheck(float carVolt, float lifepoVolt, float measuredAmp) {
         Serial.print("ACS  lader fra lifePo til bil: ");
         Serial.println((measuredAmp), 1);
         doCharge = false;  // Stop if current goes negative beyond threshold
-    } else if (lifepoVolt < LIFEPO_RECOVER) {
+    } else if (lifepoVolt < LIFEPO_MAX) {
         ChargingPaused = false;
         doCharge = true;   // resume charging
     }
@@ -194,12 +194,13 @@ bool batterySafetyCheck(float carVolt, float lifepoVolt, float measuredAmp) {
     // Write flag to EEPROM if changed
     if (ChargingPaused != prevFlag) {
         Serial.println("ChargingPaused written to eeprom");
-        writeEepromFlag(ChargingPaused);
+        // writeEepromFlag(ChargingPaused);
         prevFlag = ChargingPaused;
     }
+    Serial.println(doCharge ? "doCharfe = YES" : "doCharfe = NO");
+   
     return doCharge;
 }
-
 // --------------- Print current & PWM ------------------
 void printStatus(float measuredAmp, float carVolt, float lifepoVolt, int pwmOut, bool doCharge) {
     Serial.print("Current: ");

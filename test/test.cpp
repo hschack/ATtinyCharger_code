@@ -21,7 +21,7 @@ constexpr float scaleDivider   = (Vref / 4095.0) * ((R1 + R2) / R2);
 // ACS758 parameters
 constexpr float acsOffset      = 2048.0; // 0A
 constexpr float acsSens        = 0.12207; // 40 mV per 1A
-
+//
 // ------------------- Safety thresholds -----------------------
 constexpr float BAT_DIFF_MAX   = 0.0;   // V, carBat - LiFePO4
 constexpr float LIFEPO_MAX     = 13.8;  // V, High stop charge
