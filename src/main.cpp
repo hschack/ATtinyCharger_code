@@ -20,12 +20,12 @@ constexpr float acsSens        = 0.030518; // 40 mV per 1A
 // ------------------- Safety thresholds -----------------------
 constexpr float BAT_DIFF_MAX   = 0.0;   // V, carBat - LiFePO4
 constexpr float LIFEPO_MAX     = 13.8;  // V, High stop charge
-constexpr float LIFEPO_RECOVER = 13.1;  // V, resume charging
+constexpr float LIFEPO_RECOVER = 13.4;  // V, resume charging
 constexpr float ACS_MIN        = -1.0;  // A, stop if current goes negative
 
 // ------------------- PWM control constants -------------------
 constexpr float SETPOINT_A     = 7.0;  // target current
-#define PWM_STEP_FAST            20      // 5% PWM step
+#define PWM_STEP_FAST            10      // 5% PWM step
 #define PWM_STEP_SLOW            2       // 2% PWM step
 constexpr int   PWM_MAX        = 255;
 constexpr int   PWM_MIN        = 0;
@@ -176,7 +176,7 @@ bool batterySafetyCheck(float carVolt, float lifepoVolt, float measuredAmp) {
     // Write flag to EEPROM if changed
     if (ChargingPaused != prevFlag) {
         Serial.println("ChargingPaused written to eeprom");
-        // writeEepromFlag(ChargingPaused);
+        writeEepromFlag(ChargingPaused);
         prevFlag = ChargingPaused;
     }
     Serial.println(doCharge ? "doCharge = YES" : "doCharge = NO");
