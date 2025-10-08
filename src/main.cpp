@@ -201,6 +201,7 @@ bool batterySafetyCheck(float carVolt, float lifepoVolt, float measuredAmp) {
    
     return doCharge;
 }
+
 // --------------- Print current & PWM ------------------
 void printStatus(float measuredAmp, float carVolt, float lifepoVolt, int pwmOut, bool doCharge) {
     Serial.print("Current: ");
