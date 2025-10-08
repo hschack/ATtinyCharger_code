@@ -1,40 +1,21 @@
 #include <Arduino.h>
 #include <EEPROM.h>
-#include "avr/io.h"
-#include "avr/wdt.h"
-
-// FUSES = {
-//   0x0A, // WDTCFG {PERIOD=4KCLK, WINDOW=OFF}
-//   0x00, // BODCFG {SLEEP=DIS, ACTIVE=DIS, SAMPFREQ=1KHZ, LVL=BODLEVEL0}
-//   0x7E, // OSCCFG {FREQSEL=20MHZ, OSCLOCK=CLEAR}
-//   {0, 0},
-//   0xF6, // SYSCFG0 {EESAVE=CLEAR, RSTPINCFG=UPDI, TOUTDIS=SET, CRCSRC=NOCRC}
-//   0xFF, // SYSCFG1 {SUT=64MS}
-//   0x00, // APPEND {APPEND=User range:  0x0 - 0xFF}
-//   0x00, // BOOTEND {BOOTEND=User range:  0x0 - 0xFF}
-// };
-
-//  LOCKBITS = 0xC5; // {LB=NOLOCK}
 
 // ------------------- Pin constants -------------------
-//const uint8_t ledPin           = LED_BUILTIN;
 const uint8_t carBatPin        = PIN_A1;
 const uint8_t liefpoBatPin     = PIN_A2;
 const uint8_t currentPin       = PIN_A3; // ACS758
 const uint8_t pwmPin           = PIN_A6;
 const uint8_t ignPin           = PIN_A7;
+
 // ------------------- ADC / sensor constants -------------------
 constexpr float Vref           = 5.0;
 constexpr float scaleDirect    = Vref / 4095.0;
-
-// Voltage dividers for batteries (carBat & LiFePO4)
 constexpr float R1             = 8200.0;
 constexpr float R2             = 2200.0;
 constexpr float scaleDivider   = (Vref / 4095.0) * ((R1 + R2) / R2);
-
-// ACS758 parameters
 constexpr float acsOffset      = 2048.0; // 0A
-constexpr float acsSens        = 0.030518; // 0.12207; // 40 mV per 1A
+constexpr float acsSens        = 0.030518; // 40 mV per 1A
 
 // ------------------- Safety thresholds -----------------------
 constexpr float BAT_DIFF_MAX   = 0.0;   // V, carBat - LiFePO4
@@ -53,6 +34,7 @@ constexpr int   PWM_MIN        = 0;
 #define ADC_INTERVAL             25      // in 25ms => 40 Hz
 #define PRINT_INTERVAL           1000    // in 1000ms => 1 Hz
 #define FILTER_CONSTANT          0.3
+
 // ------------------- Filtered ADC -------------------
 static float filtCurrent       = 2048.0;
 static float filtCarBat        = 0.0;
@@ -71,6 +53,7 @@ bool batterySafetyCheck(float carVolt, float lifepoVolt, float measuredAmp);
 bool readEepromFlag();
 void writeEepromFlag(bool flag);
 void feed_wdt();
+void analogWriteA6(uint8_t value);
 
 // ------------------- Main loop ------------------------
 void loop() {
@@ -101,10 +84,9 @@ void loop() {
 
         // Print status
         printStatus(measuredAmp, carVolt, lifepoVolt, Pwm, doCharge);
-        //digitalWrite(ledPin, !digitalRead(ledPin));
     }
-        feed_wdt(); // feed watchdog
-        // delay(3500); // test wdt time out 3500 ms ok med 0A ca 4 sek
+
+    feed_wdt(); // feed watchdog
 }
 
 // ------------------- Functions ------------------------
@@ -128,11 +110,11 @@ int controlPWM(float measuredAmp, bool doCharge) {
    
     if(doCharge) { // true
         if (measuredAmp < (SETPOINT_A * 0.8)) {
-            step = PWM_STEP_FAST; // inc pwm by PWM_STEP_FAST
+            step = PWM_STEP_FAST; // increase pwm by PWM_STEP_FAST
         } else if (measuredAmp < SETPOINT_A) {
-            step = PWM_STEP_SLOW;   // inc pwm by PWM_STEP_SLOW
+            step = PWM_STEP_SLOW;   // increase pwm by PWM_STEP_SLOW
         } else if(measuredAmp > (SETPOINT_A*1.2)) {
-            step = -PWM_STEP_SLOW;  // dec pwm by PWM_STEP_SLOW
+            step = -PWM_STEP_SLOW;  // decrease pwm by PWM_STEP_SLOW
         }
         
         pwmOut = pwmOutUpdated + step;
@@ -148,8 +130,8 @@ int controlPWM(float measuredAmp, bool doCharge) {
     }
 
     if(pwmOutUpdated != pwmOut) {
-        // Change pwm output, if pwmOut has changed
-        analogWrite(pwmPin, pwmOut);
+        // Change PWM output, if pwmOut has changed
+        analogWriteA6(pwmOut); // Use TCB0 wrapper
         pwmOutUpdated = pwmOut;
     }
     return pwmOut;
@@ -174,7 +156,7 @@ bool batterySafetyCheck(float carVolt, float lifepoVolt, float measuredAmp) {
         doCharge = false;
     }
     else if ((carVolt - lifepoVolt) < BAT_DIFF_MAX) {
-        Serial.print("Dif Negativ: ");
+        Serial.print("Dif Negative: ");
         Serial.println((carVolt-lifepoVolt), 2);
         doCharge = false;  // stop charging
     } else if (lifepoVolt > LIFEPO_MAX) {
@@ -183,9 +165,9 @@ bool batterySafetyCheck(float carVolt, float lifepoVolt, float measuredAmp) {
         doCharge = false;  // stop charging
         ChargingPaused = true;
     } else if (measuredAmp < ACS_MIN) {
-        Serial.print("ACS  lader fra lifePo til bil: ");
+        Serial.print("ACS  charging from LiFePo4 to car: ");
         Serial.println((measuredAmp), 1);
-        doCharge = false;  // Stop if current goes negative beyond threshold
+        doCharge = false;  // Stop if current goes negative
     } else if (lifepoVolt < LIFEPO_MAX) {
         ChargingPaused = false;
         doCharge = true;   // resume charging
@@ -197,10 +179,11 @@ bool batterySafetyCheck(float carVolt, float lifepoVolt, float measuredAmp) {
         // writeEepromFlag(ChargingPaused);
         prevFlag = ChargingPaused;
     }
-    Serial.println(doCharge ? "doCharfe = YES" : "doCharfe = NO");
+    Serial.println(doCharge ? "doCharge = YES" : "doCharge = NO");
    
     return doCharge;
 }
+
 // --------------- Print current & PWM ------------------
 void printStatus(float measuredAmp, float carVolt, float lifepoVolt, int pwmOut, bool doCharge) {
     Serial.print("Current: ");
@@ -220,17 +203,26 @@ void printStatus(float measuredAmp, float carVolt, float lifepoVolt, int pwmOut,
 
 // ------------------- Setup ----------------------------
 void setup() {
- //   pinMode(ledPin, OUTPUT);
+    // Setup PWM on PA6 (TCB0)
     pinMode(pwmPin, OUTPUT);
-    analogWrite(pwmPin, PWM_MIN);
+
+    // Stop TCB0 while configuring
+    TCB0.CTRLA = 0;
+
+    // Set 8-bit PWM mode and enable output
+    TCB0.CTRLB = TCB_CNTMODE_PWM8_gc | TCB_CCMPEN_bm;
+
+    // Set TOP value for 8-bit PWM
+    TCB0.CCMP = 255;
+
+    // Start with 0% duty cycle
+    TCB0.CCMPH = PWM_MIN;
+
+    // Enable timer with prescaler DIV64 (~1.2 kHz @ 20 MHz)
+    TCB0.CTRLA = TCB_ENABLE_bm | 5;  // prescaler /64
+
     Serial.begin(115200);
     analogReadResolution(12);
-    // CPU_CCP = CCP_IOREG_gc; // allow changes
-    // WDT.CTRLA = WDT_WINDOW_4KCLK_gc | WDT_PERIOD_4KCLK_gc; // 4s period and window
-    // CPU_CCP = CCP_IOREG_gc;
-    // WDT.STATUS = WDT_LOCK_bm;
-    // while(WDT.STATUS & WDT_SYNCBUSY_bm){
-    // } // wait until WDT is synchronized  
     Serial.println("Setup done !");
 }
 
@@ -247,4 +239,9 @@ void writeEepromFlag(bool flag) {
 // Feed watchdog
 void feed_wdt(void) {
   __asm__ __volatile__("wdr");
+}
+// ------------------- PWM wrapper for PA6 -------------------
+// Use TCB0 to emulate analogWrite on PA6
+void analogWriteA6(uint8_t value) {
+    TCB0.CCMPH = value;  // 0–255 duty cycle
 }
