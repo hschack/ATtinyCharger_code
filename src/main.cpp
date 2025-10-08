@@ -32,7 +32,8 @@ constexpr int   PWM_MIN        = 0;
 
 // ------------------- Timing -------------------
 #define ADC_INTERVAL             25      // in 25ms => 40 Hz
-#define PRINT_INTERVAL           1000    // in 1000ms => 1 Hz
+#define PWM_INTERVAL             1000   // 1000 ms => 1 Hz
+#define PRINT_INTERVAL           5000    // in 5000ms => 1 Hz
 #define FILTER_CONSTANT          0.3
 
 // ------------------- Filtered ADC -------------------
@@ -56,8 +57,10 @@ void feed_wdt();
 void analogWriteA6(uint8_t value);
 
 // ------------------- Main loop ------------------------
+
 void loop() {
    static uint32_t lastAdcTime = 0;
+   static uint32_t lastPwmTime = 0;
    static uint32_t lastPrintTime = 0;
    uint32_t now = millis();
 
@@ -68,8 +71,8 @@ void loop() {
     }
 
     // Control + safety check + print 1 Hz
-    if ((now - lastPrintTime) >= PRINT_INTERVAL) {
-        lastPrintTime = now;
+    if ((now - lastPwmTime) >= PWM_INTERVAL) {
+        lastPwmTime = now;
 
         // Convert ADCs to voltage / current
         float carVolt     = filtCarBat * scaleDivider;
@@ -82,8 +85,12 @@ void loop() {
         // Only control PWM if allowed
         int Pwm = controlPWM(measuredAmp, doCharge);
 
-        // Print status
+    // Print status
+    lastPrintTime = lastPrintTime + lastAdcTime;
+    if (lastPrintTime >= PRINT_INTERVAL){
         printStatus(measuredAmp, carVolt, lifepoVolt, Pwm, doCharge);
+        lastPrintTime = 0;
+        }   
     }
 
     feed_wdt(); // feed watchdog
