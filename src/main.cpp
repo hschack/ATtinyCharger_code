@@ -14,26 +14,26 @@ constexpr float scaleDirect    = Vref / 4095.0;
 constexpr float R1             = 8200.0;
 constexpr float R2             = 2200.0;
 constexpr float scaleDivider   = (Vref / 4095.0) * ((R1 + R2) / R2);
-constexpr float acsOffset      = 2048.0; // 0A
+constexpr float acsOffset      = 2045.0; // 0A
 constexpr float acsSens        = 0.030518; // 40 mV per 1A
 
 // ------------------- Safety thresholds -----------------------
 constexpr float BAT_DIFF_MAX   = 0.0;   
 constexpr float LIFEPO_MAX     = 13.8;  
-constexpr float LIFEPO_RECOVER = 13.4;  
+constexpr float LIFEPO_RECOVER = 13.2;  
 constexpr float ACS_MIN        = -1.0;  
 
 // ------------------- PWM control constants -------------------
-constexpr float SETPOINT_A     = 7.0;  
-#define PWM_STEP_FAST            10     
+constexpr float SETPOINT_A     = 8.0;  
+#define PWM_STEP_FAST            20     
 #define PWM_STEP_SLOW            2      
-constexpr int   PWM_MAX        = 255;
+constexpr int   PWM_MAX        = 253;
 constexpr int   PWM_MIN        = 0;
 
 // ------------------- Timing -------------------
 #define ADC_INTERVAL             25      
 #define PWM_INTERVAL             1000   
-#define PRINT_INTERVAL           1000    
+#define PRINT_INTERVAL           5000    
 #define FILTER_CONSTANT          0.3
 
 // ------------------- Filtered ADC -------------------
@@ -183,8 +183,8 @@ bool batterySafetyCheck(float carVolt, float lifepoVolt, float measuredAmp) {
 }
 
 void printStatus(float measuredAmp, float carVolt, float lifepoVolt, int pwmOut, bool doCharge) {
-    Serial.print("Current: "); Serial.print(measuredAmp, 1);
-    Serial.print("A, C: "); Serial.print(carVolt, 1);
+    Serial.print("Current: "); Serial.print(measuredAmp, 2);
+    Serial.print("A, C: "); Serial.print(carVolt, 2 );
     Serial.print(", L: "); Serial.print(lifepoVolt, 2);
     Serial.print(", pwm: "); Serial.print(pwmOut);
     Serial.print(", Dif: "); Serial.print(carVolt - lifepoVolt ,2);
