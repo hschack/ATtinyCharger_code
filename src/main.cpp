@@ -1,9 +1,22 @@
 #include <Arduino.h>
 #include <EEPROM.h>
+// ------------------- Fuses and Lockbits -------------------
+// FUSES = {
+//   0x0A, // WDTCFG {PERIOD=4KCLK, WINDOW=OFF}
+//   0x00, // BODCFG {SLEEP=DIS, ACTIVE=DIS, SAMPFREQ=1KHZ, LVL=BODLEVEL0}
+//   0x7E, // OSCCFG {FREQSEL=20MHZ, OSCLOCK=CLEAR}
+//   {0, 0},
+//   0xF6, // SYSCFG0 {EESAVE=CLEAR, RSTPINCFG=UPDI, TOUTDIS=SET, CRCSRC=NOCRC}
+//   0xFF, // SYSCFG1 {SUT=64MS}
+//   0x00, // APPEND {APPEND=User range:  0x0 - 0xFF}
+//   0x00, // BOOTEND {BOOTEND=User range:  0x0 - 0xFF}
+// };
+
+//  LOCKBITS = 0xC5; // {LB=NOLOCK}
 
 // ------------------- Pin constants -------------------
-const uint8_t carBatPin        = PIN_A1;
-const uint8_t liefpoBatPin     = PIN_A2;
+const uint8_t carBatVoltPin        = PIN_A1;
+const uint8_t liefpoBatVoltPin     = PIN_A2;
 const uint8_t currentPin       = PIN_A3; // ACS758
 const uint8_t pwmPin           = PIN_A5; // PA5 for PWM
 const uint8_t ledPin           = PIN_A6;
@@ -125,8 +138,8 @@ void loop() {
 // ------------------- Functions ------------------------
 void sampleAdc() {
     filtCurrent   = filteredUpdate(filtCurrent,   analogRead(currentPin));
-    filtCarBat    = filteredUpdate(filtCarBat,    analogRead(carBatPin));
-    filtLiFePO4   = filteredUpdate(filtLiFePO4,   analogRead(liefpoBatPin));
+    filtCarBat    = filteredUpdate(filtCarBat,    analogRead(carBatVoltPin));
+    filtLiFePO4   = filteredUpdate(filtLiFePO4,   analogRead(liefpoBatVoltPin));
 }
 
 float filteredUpdate(float oldVal, float newVal) {
