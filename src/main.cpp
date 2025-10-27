@@ -6,6 +6,7 @@ const uint8_t carBatPin        = PIN_A1;
 const uint8_t liefpoBatPin     = PIN_A2;
 const uint8_t currentPin       = PIN_A3; // ACS758
 const uint8_t pwmPin           = PIN_A5; // PA5 for PWM
+const uint8_t ledPin           = PIN_A6;
 const uint8_t ignPin           = PIN_A7;
 
 // ------------------- ADC / sensor constants -------------------
@@ -79,10 +80,10 @@ void setup() {
 
     // Enable timer with prescaler DIV64 (~1.2 kHz @ 20 MHz)
     TCB0.CTRLA = TCB_ENABLE_bm | 5;
-
+    pinMode(ledPin, OUTPUT);
     Serial.begin(115200);
     analogReadResolution(12);
-    Serial.println("Setup done, PWM on PA5!");
+    Serial.println("Setup done");
 }
 
 // ------------------- Main loop ------------------------
@@ -95,6 +96,7 @@ void loop() {
     // ADC sampling
     if ((now - lastAdcTime) >= ADC_INTERVAL) {
         lastAdcTime = now;
+        digitalWrite(ledPin, !digitalRead(ledPin));
         sampleAdc();
     }
 
